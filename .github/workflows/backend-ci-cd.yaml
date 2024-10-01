@@ -25,7 +25,7 @@ jobs:
           distribution: 'temurin'
 
       - name: Install dependencies and run tests
-        working-directory: ./azure-demo
+        working-directory: ./azure
         run: mvn clean test
 
   build:
