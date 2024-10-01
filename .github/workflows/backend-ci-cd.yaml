@@ -1,0 +1,60 @@
+name: CI/CD Backend Pipeline
+run-name: ${{ github.actor }} is testing out GitHub Actions and Azure
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Install dependencies and run tests
+        working-directory: ./azure-demo
+        run: mvn clean test
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u jacobperssons --password-stdin
+
+      - name: Build backend Docker image
+        working-directory: ./azure-demo
+        run: docker buildx build --platform linux/amd64 -t jacobperssons/azure-backend:amd64 .
+
+      - name: Push backend Docker image to Docker Hub
+        working-directory: ./azure-demo
+        run: docker push jacobperssons/azure-backend:amd64
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/master'
+
+    steps:
+    - name: 'Deploy to Azure Web App'
+      uses: azure/webapps-deploy@v2
+      with:
+        app-name: 'azure-demo'
+        images: 'jacobperssons/azure-backend:amd64'
