@@ -4,8 +4,7 @@ FROM maven:3.9.9-eclipse-temurin-21 AS build
 
 LABEL authors="jacob.persson"
 
-# Establish root for the rest of the file
-WORKDIR /azure
+WORKDIR /build
 
 # Copy dependencies and source files to build image (?)
 COPY pom.xml .
@@ -18,8 +17,11 @@ RUN mvn clean package -DskipTests
 # Production phase: Produce Image. Lighweight image to minimize size
 FROM eclipse-temurin:21-jdk-alpine
 
-# Copy step, contents from the jar into a new jar. Genereic - "app.jar"
-COPY ./target/*.jar azure.jar
+# Establish root for the rest of the file
+WORKDIR /app
+
+# Copy step, contents from the jar into a new jar. Generic - "app.jar"
+COPY --from=build /build/target/*.jar app.jar
 
 # Container listens to the specified network port
 # Automatically exposed to 8080, this should match the port specified in
@@ -27,7 +29,7 @@ COPY ./target/*.jar azure.jar
 EXPOSE 8080
 
 # Start command, CMD: add personalized arguments. ENTRYPOINT: no arguments
-ENTRYPOINT ["java", "-jar", "azure.jar"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
 
 # ARG works like a variable
 # ARG DEPENDENCY=target/dependency

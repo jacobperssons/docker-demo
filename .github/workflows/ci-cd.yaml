@@ -1,0 +1,69 @@
+name: Azure CI/CD
+run-name: ${{ github.actor }} is testing out GitHub Actions and Azure
+
+# Conditions
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+# Steps
+jobs: 
+  # TODO: Add test job
+
+  build-backend: 
+    runs-on: ubuntu-latest
+    # needs: test
+
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u jacobperssons --password-stdin
+
+      - name: Build backend Docker image and push to Docker Hub
+        working-directory: ./azure
+        run: | 
+          docker buildx build --platform linux/amd64 -t jacobperssons/azure-backend:amd64 .
+          docker push jacobperssons/azure-backend:amd64
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    needs: build-backend
+    # needs: test
+
+    steps: 
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u jacobperssons --password-stdin
+
+      - name: Build frontend Docker image and push to Docker Hub
+        working-directory: ./azure-frontend
+        run: | 
+          docker buildx build --platform linux/amd64 -t jacobperssons/azure-frontend:amd64 .
+          docker push jacobperssons/azure-frontend:amd64
+    
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    if: github.ref == 'refs/heads/master'
+
+    steps: 
+      - name: Check out the repository
+        uses: actions/checkout@v4
+
+      - name: Log in to Docker Hub
+        run: echo "${{ secrets.DOCKER_TOKEN }}" | docker login -u jacobperssons --password-stdin
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          docker-compose-file: ./compose.yml
+          container-command: ''

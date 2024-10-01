@@ -1,6 +1,6 @@
 # Build stage
 # Latest node version, named as frontend-build
-FROM node:22 AS frontend-build
+FROM node:20 AS frontend-build
 
 # Rename root of directory
 WORKDIR /app
@@ -23,7 +23,7 @@ FROM node:slim AS runner
 
 # Copy content from the build stage
 COPY --from=frontend-build /app/.next ./.next
-COPY --from=frontend-build /app/public ./public
+# COPY --from=frontend-build /app/public ./public
 COPY --from=frontend-build /app/package*.json ./
 
 # Only install production dependencies

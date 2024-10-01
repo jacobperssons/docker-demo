@@ -1,12 +1,20 @@
+version: '3.9'
+
 services:
   azure-frontend-service: 
-    image: jacobperssons/azure-frontend:latest
+    build: 
+      context: .
+      dockerfile: azure-frontend/Dockerfile
+    image: jacobperssons/azure-frontend:amd64
     ports: 
       - "80:3000"
     restart: always
 
   azure-backend-service: 
-    image: jacobperssons/azure-backend:latest
+    build: 
+      context: .
+      dockerfile: azure/Dockerfile
+    image: jacobperssons/azure-backend:amd64
     ports: 
       - "8080:8080"
     restart: always
